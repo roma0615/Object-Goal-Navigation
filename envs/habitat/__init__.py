@@ -5,7 +5,9 @@ import numpy as np
 import torch
 from habitat.config.default import get_config as cfg_env
 from habitat.datasets.pointnav.pointnav_dataset import PointNavDatasetV1
-from habitat import Config, Env, RLEnv, VectorEnv, make_dataset
+from habitat import Env, RLEnv, VectorEnv, make_dataset
+
+from omegaconf import OmegaConf
 
 from agents.sem_exp import Sem_Exp_Env_Agent
 from .objectgoal_env import ObjectGoal_Env
@@ -15,9 +17,9 @@ from .utils.vector_env import VectorEnv
 
 def make_env_fn(args, config_env, rank):
     dataset = make_dataset(config_env.DATASET.TYPE, config=config_env.DATASET)
-    config_env.defrost()
+    # config_env.defrost()
     config_env.SIMULATOR.SCENE = dataset.episodes[0].scene_id
-    config_env.freeze()
+    # config_env.freeze()
 
     if args.agent == "sem_exp":
         env = Sem_Exp_Env_Agent(args=args, rank=rank,
@@ -49,15 +51,15 @@ def construct_envs(args):
     env_configs = []
     args_list = []
 
-    basic_config = cfg_env(config_paths=["envs/habitat/configs/"
-                                         + args.task_config])
-    basic_config.defrost()
+    basic_config = cfg_env("envs/habitat/configs/" + args.task_config)
+    OmegaConf.set_readonly(basic_config, False)
+    # basic_config.defrost()
     basic_config.DATASET.SPLIT = args.split
     basic_config.DATASET.DATA_PATH = \
         basic_config.DATASET.DATA_PATH.replace("v1", args.version)
     basic_config.DATASET.EPISODES_DIR = \
         basic_config.DATASET.EPISODES_DIR.replace("v1", args.version)
-    basic_config.freeze()
+    # basic_config.freeze()
 
     scenes = basic_config.DATASET.CONTENT_SCENES
     if "*" in basic_config.DATASET.CONTENT_SCENES:
@@ -78,9 +80,9 @@ def construct_envs(args):
 
     print("Scenes per thread:")
     for i in range(args.num_processes):
-        config_env = cfg_env(config_paths=["envs/habitat/configs/"
-                                           + args.task_config])
-        config_env.defrost()
+        config_env = cfg_env("envs/habitat/configs/" + args.task_config)
+        OmegaConf.set_readonly(config_env, False)
+        # config_env.defrost()
 
         if len(scenes) > 0:
             config_env.DATASET.CONTENT_SCENES = scenes[
@@ -133,7 +135,7 @@ def construct_envs(args):
         config_env.DATASET.EPISODES_DIR = \
             config_env.DATASET.EPISODES_DIR.replace("v1", args.version)
 
-        config_env.freeze()
+        # config_env.freeze()
         env_configs.append(config_env)
 
         args_list.append(args)
